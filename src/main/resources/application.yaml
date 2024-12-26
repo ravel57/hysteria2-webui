@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: hysteria2-webui
+
+hysteria-config-path: "${HYSTERIA_CONFIG_PATH:/etc/hysteria/config.yaml}"
