@@ -1,5 +1,13 @@
+server:
+  port: ${SERVER_PORT:51841}
+
 spring:
   application:
     name: hysteria2-webui
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    cache: false
 
 hysteria-config-path: "${HYSTERIA_CONFIG_PATH:/etc/hysteria/config.yaml}"

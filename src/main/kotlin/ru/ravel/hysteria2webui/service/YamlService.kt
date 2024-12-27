@@ -3,6 +3,7 @@ package ru.ravel.hysteria2webui.service
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.client.j2se.MatrixToImageWriter
 import com.google.zxing.qrcode.QRCodeWriter
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -11,11 +12,14 @@ import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.nodes.Tag
 import ru.ravel.hysteria2webui.model.HysteriaConfig
 import ru.ravel.hysteria2webui.model.User
+import ru.ravel.hysteria2webui.model.Username
 import java.awt.image.BufferedImage
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
+import java.nio.file.Files
 import java.util.*
 import javax.imageio.ImageIO
 
@@ -26,19 +30,20 @@ class YamlService @Autowired constructor(
 	var configPath: String,
 ) {
 
-	fun getAllUsers(): List<User> {
+	fun getAllUsers(): Set<User> {
 		return readConfig().auth?.userpass
-			?.map { User(it.key, it.value) }
-			?: listOf()
+			?.map { User(it.key, it.value, true) }
+			?.toSet()
+			?: setOf()
 	}
 
 
-	fun addNewUserToConfig(username: String): User {
+	fun addNewUserToConfig(username: Username): User {
 		val password: String = generatePassword(20)
 		val config = readConfig()
-		config.auth?.userpass?.put(username, password)
+		config.auth?.userpass?.put(username.username, password)
 		saveConfig(config)
-		return User(username, password)
+		return User(username.username, password, true)
 	}
 
 
@@ -46,7 +51,7 @@ class YamlService @Autowired constructor(
 		val config = readConfig()
 		config.auth?.userpass?.remove(username)
 		saveConfig(config)
-		return User(username, "")
+		return User(username, "", false)
 	}
 
 
@@ -105,12 +110,17 @@ class YamlService @Autowired constructor(
 	}
 
 
-	fun generateQRCode(username: String): ByteArray {
+	fun generateQRCode(username: String, response: HttpServletResponse) {
 		val qrCodeWriter = QRCodeWriter()
 		val bitMatrix = qrCodeWriter.encode(getUrlForUser(username), BarcodeFormat.QR_CODE, 300, 300)
 		val qrImage: BufferedImage = MatrixToImageWriter.toBufferedImage(bitMatrix)
 		val outputStream = ByteArrayOutputStream()
 		ImageIO.write(qrImage, "png", outputStream)
-		return outputStream.toByteArray()
+		outputStream.flush()
+		val inputStream = ByteArrayInputStream(outputStream.toByteArray())
+		outputStream.close()
+		response.outputStream.use { os ->
+			inputStream.copyTo(os)
+		}
 	}
 }
