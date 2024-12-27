@@ -10,5 +10,5 @@ spring:
     mode: HTML
     cache: false
 
-hysteria-config-path: "${HYSTERIA_CONFIG_PATH:/etc/hysteria/config.yaml}"
-login-password: "${PASSWORD}"
+hysteria-config-path: ${HYSTERIA_CONFIG_PATH:/etc/hysteria/config.yaml}
+login-password: ${PASSWORD}
