@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import ru.ravel.hysteria2webui.model.User
 import ru.ravel.hysteria2webui.model.Username
 import ru.ravel.hysteria2webui.service.YamlService
 
@@ -48,7 +49,14 @@ class ApiController @Autowired constructor(
 	fun deleteUser(
 		@RequestParam username: String,
 	): ResponseEntity<Any> {
-		return ResponseEntity.ok().body(yamlService.deleteUserFromConfig(username))
+		return ResponseEntity.ok().body(yamlService.deleteUserFromConfig(username, true))
+	}
+
+	@PatchMapping("/user")
+	fun patchUser(
+		@RequestBody user: User,
+	): ResponseEntity<Any> {
+		return ResponseEntity.ok().body(yamlService.patchUserFromConfig(user))
 	}
 
 }

@@ -14,50 +14,53 @@ import ru.ravel.hysteria2webui.model.HysteriaConfig
 import ru.ravel.hysteria2webui.model.User
 import ru.ravel.hysteria2webui.model.Username
 import java.awt.image.BufferedImage
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.FileInputStream
-import java.io.InputStream
-import java.nio.file.Files
+import java.io.*
 import java.util.*
 import javax.imageio.ImageIO
 
 
 @Service
 class YamlService @Autowired constructor(
+	private val jsonService: JsonService,
+
 	@Value("\${hysteria-config-path}")
-	var configPath: String,
+	private var configPath: String,
 ) {
 
 	fun getAllUsers(): Set<User> {
-		return readConfig().auth?.userpass
-			?.map { User(it.key, it.value, true) }
-			?.toSet()
-			?: setOf()
+		return jsonService.getAllUsers().toSet()
 	}
 
 
-	fun addNewUserToConfig(username: Username): User {
-		val password: String = generatePassword(20)
+	fun addNewUserToConfig(username: Username, pswrd: String = ""): User {
+		var password: String =
+			if (pswrd.isEmpty()) {
+				generatePassword(20)
+			} else {
+				pswrd
+			}
 		val config = readConfig()
 		config.auth?.userpass?.put(username.username, password)
 		saveConfig(config)
+		jsonService.newUser(User(username.username, password, true))
 		return User(username.username, password, true)
 	}
 
 
-	fun deleteUserFromConfig(username: String): User {
+	fun deleteUserFromConfig(username: String, removeFromJson: Boolean = false): User {
 		val config = readConfig()
 		config.auth?.userpass?.remove(username)
 		saveConfig(config)
+		if (removeFromJson) {
+			jsonService.deleteUser(User(username, "", false))
+		}
 		return User(username, "", false)
 	}
 
 
 	fun getUrlForUser(username: String): String {
 		val config = readConfig()
-		val password = config.auth?.userpass?.get(username) ?: ""
+		val password = jsonService.getAllUsers().find { it.name == username }?.password
 		val domain = config.acme?.domains?.first() ?: ""
 		return "hysteria2://${username}:${password}@${domain}:443/?insecure=1"
 	}
@@ -100,7 +103,7 @@ class YamlService @Autowired constructor(
 				}
 
 				2 -> if (useSpecialChars) {
-					val specialChars = "!@#$%^&*()_+-={}:<>?/.,;[]"
+					val specialChars = "!\$'()*+,;="
 					chars[i] = specialChars.random().toChar()
 				}
 			}
@@ -123,4 +126,16 @@ class YamlService @Autowired constructor(
 			inputStream.copyTo(os)
 		}
 	}
+
+
+	fun patchUserFromConfig(user: User): User? {
+		if (user.enabled) {
+			addNewUserToConfig(username = Username(user.name), pswrd = user.password)
+		} else {
+			deleteUserFromConfig(user.name, false)
+		}
+		jsonService.patchUser(user)
+		return user
+	}
+
 }
