@@ -10,9 +10,7 @@ import org.springframework.stereotype.Service
 import org.yaml.snakeyaml.DumperOptions.FlowStyle
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.nodes.Tag
-import ru.ravel.hysteria2webui.model.HysteriaConfig
-import ru.ravel.hysteria2webui.model.User
-import ru.ravel.hysteria2webui.model.Username
+import ru.ravel.hysteria2webui.model.*
 import java.awt.image.BufferedImage
 import java.io.*
 import java.util.*
@@ -25,6 +23,9 @@ class YamlService @Autowired constructor(
 
 	@Value("\${hysteria-config-path}")
 	private var configPath: String,
+
+	@Value("\${host-url}")
+	private var hostUrl: String,
 ) {
 
 	fun getAllUsers(): Set<User> {
@@ -33,40 +34,64 @@ class YamlService @Autowired constructor(
 
 
 	fun addNewUserToConfig(username: Username, pswrd: String = ""): User {
-		val password: String = pswrd.ifEmpty {
-			generatePassword(20)
-		}
+		val password: String = pswrd.ifEmpty { generatePassword(20) }
 		val config = readConfig()
-		config.auth?.userpass?.put(username.username, password)
+		val uuid = UUID.randomUUID()
+		config.auth?.userpass?.put(uuid.toString(), password)
 		saveConfig(config)
-		jsonService.newUser(User(username.username, password, true))
-		return User(username.username, password, true)
+		jsonService.newUser(User(username.username, password, true, uuid))
+		return User(username.username, password, true, uuid)
 	}
 
 
 	fun deleteUserFromConfig(username: String, removeFromJson: Boolean = false): User {
 		val config = readConfig()
-		config.auth?.userpass?.remove(username)
+		val user = jsonService.getAllUsers().find { it.name == username }
+		val uuid = user?.uuid ?: UUID.randomUUID()
+		config.auth?.userpass?.remove(uuid.toString())
 		saveConfig(config)
 		if (removeFromJson) {
-			jsonService.deleteUser(User(username, "", false))
+			jsonService.deleteUser(User(username, "", false, uuid))
 		}
-		return User(username, "", false)
+		return User(username, "", false, uuid)
 	}
 
 
 	fun getUrlForUser(username: String): String {
-		val config = readConfig()
-		val password = jsonService.getAllUsers().find { it.name == username }?.password
-		val domain = config.acme?.domains?.first() ?: ""
-		return "hysteria2://${username}:${password}@${domain}:443/?insecure=1"
+		val user = jsonService.getAllUsers().find { it.name == username }
+		val password = user?.password
+		val uuid = user?.uuid
+		return "hysteria2://${uuid}:${password}@${hostUrl}:443/?insecure=1"
 	}
 
 
 	private fun readConfig(): HysteriaConfig {
 		val yaml = Yaml()
-		val input: InputStream = FileInputStream(configPath)
-		return yaml.loadAs(input, HysteriaConfig::class.java)
+		val config = try {
+			val input: InputStream = FileInputStream(configPath)
+			yaml.loadAs(input, HysteriaConfig::class.java)
+		} catch (e: Exception) {
+			val hysteriaConfig = HysteriaConfig(
+				auth = Auth(
+					type = "userpass",
+					userpass = mutableMapOf(),
+				),
+				masquerade = Masquerade(
+					type = "proxy",
+					proxy = Proxy(
+						url = "https://news.ycombinator.com/",
+						rewriteHost = true,
+					),
+				),
+				acme = Acme(
+					domains = listOf(hostUrl),
+					email = "your@email.com",
+				),
+			)
+			saveConfig(hysteriaConfig)
+			hysteriaConfig
+		}
+		return config
 	}
 
 
@@ -76,7 +101,12 @@ class YamlService @Autowired constructor(
 			yaml.dumpAs(config, Tag("!!"), FlowStyle.BLOCK)
 				.replaceFirst("!!", "---")
 		)
-		Runtime.getRuntime().exec("systemctl restart hysteria-server.service")
+		val runtime = Runtime.getRuntime()
+		runtime.exec(arrayOf("pkill", "-f", "/usr/local/bin/hysteria")).waitFor()
+		while (runtime.exec(arrayOf("pgrep", "-f", "/usr/local/bin/hysteria")).waitFor() == 0) {
+			Thread.sleep(500)
+		}
+		runtime.exec(arrayOf("/usr/bin/nohup", "/usr/local/bin/hysteria", "server", "&"))
 	}
 
 
@@ -89,19 +119,19 @@ class YamlService @Autowired constructor(
 		val random = Random()
 		var i = 0
 		while (i < length) {
-			when (random.nextInt(3)) {
-				0 -> if (random.nextBoolean()) {
+			when (random.nextInt(6)) {
+				0, 1, 2 -> if (random.nextBoolean()) {
 					chars[i] = ('a' + random.nextInt(26)).toChar()
 				} else {
 					chars[i] = ('A' + random.nextInt(26)).toChar()
 				}
 
-				1 -> if (useNumbers) {
+				3, 4 -> if (useNumbers) {
 					chars[i] = ('0' + random.nextInt(10)).toChar()
 				}
 
-				2 -> if (useSpecialChars) {
-					val specialChars = "!\$'()*+,;="
+				5 -> if (useSpecialChars) {
+					val specialChars = "!\$()*+,;="
 					chars[i] = specialChars.random().toChar()
 				}
 			}

@@ -12,7 +12,7 @@ COPY --from=nodejs /usr/src/node/hysteria-web-ui/dist/.   /home/gradle/src/main/
 WORKDIR /home/gradle/
 RUN gradle bootJar
 
-FROM alpine/java:22-jdk AS java
+FROM bitnami/java:21.0.5-11-debian-12-r4 AS java
 WORKDIR /home/java/
 COPY --from=gradle /home/gradle/build/libs/*.jar /home/java/hysteria2-webui.jar
 CMD ["java", "-jar", "hysteria2-webui.jar"]

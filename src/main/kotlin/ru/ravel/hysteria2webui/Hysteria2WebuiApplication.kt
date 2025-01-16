@@ -8,4 +8,5 @@ class Hysteria2WebuiApplication
 
 fun main(args: Array<String>) {
 	runApplication<Hysteria2WebuiApplication>(*args)
+	Runtime.getRuntime().exec(arrayOf("/usr/bin/nohup", "/usr/local/bin/hysteria", "server", "&"))
 }
