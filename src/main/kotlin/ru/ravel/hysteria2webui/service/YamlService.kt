@@ -33,12 +33,9 @@ class YamlService @Autowired constructor(
 
 
 	fun addNewUserToConfig(username: Username, pswrd: String = ""): User {
-		var password: String =
-			if (pswrd.isEmpty()) {
-				generatePassword(20)
-			} else {
-				pswrd
-			}
+		val password: String = pswrd.ifEmpty {
+			generatePassword(20)
+		}
 		val config = readConfig()
 		config.auth?.userpass?.put(username.username, password)
 		saveConfig(config)
@@ -79,6 +76,7 @@ class YamlService @Autowired constructor(
 			yaml.dumpAs(config, Tag("!!"), FlowStyle.BLOCK)
 				.replaceFirst("!!", "---")
 		)
+		Runtime.getRuntime().exec("systemctl restart hysteria-server.service")
 	}
 
 
