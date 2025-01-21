@@ -14,3 +14,4 @@ hysteria-config-path: ${HYSTERIA_CONFIG_PATH:/etc/hysteria/config.yaml}
 json-config-path: ${JSON_CONFIG_PATH:/etc/hysteria/config.json}
 login-password: ${PASSWORD}
 host-url: ${HOST_URL}
+hysteria-port: ${HYSTERIA_PORT}

@@ -26,6 +26,9 @@ class YamlService @Autowired constructor(
 
 	@Value("\${host-url}")
 	private var hostUrl: String,
+
+	@Value("\${hysteria-port}")
+	private var hysteriaPort: String,
 ) {
 
 	fun getAllUsers(): Set<User> {
@@ -61,7 +64,7 @@ class YamlService @Autowired constructor(
 		val user = jsonService.getAllUsers().find { it.name == username }
 		val password = user?.password
 		val uuid = user?.uuid
-		return "hysteria2://${uuid}:${password}@${hostUrl}:443/?insecure=1"
+		return "hysteria2://${uuid}:${password}@${hostUrl}:${hysteriaPort}/?insecure=1"
 	}
 
 
@@ -72,6 +75,7 @@ class YamlService @Autowired constructor(
 			yaml.loadAs(input, HysteriaConfig::class.java)
 		} catch (e: Exception) {
 			val hysteriaConfig = HysteriaConfig(
+				listen = ":${hysteriaPort}",
 				auth = Auth(
 					type = "userpass",
 					userpass = mutableMapOf(),
