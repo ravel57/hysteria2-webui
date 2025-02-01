@@ -14,7 +14,7 @@ class AuthController {
 	@GetMapping("/status")
 	fun getStatus(response: HttpServletResponse): Map<String, Any> {
 		val auth = SecurityContextHolder.getContext().authentication
-		return if (auth != null && auth.isAuthenticated && auth.principal != "anonymousUser") {
+		return if (auth != null && auth.isAuthenticated /*&& auth.principal != "anonymousUser"*/) {
 			response.status = HttpServletResponse.SC_OK
 			mapOf("authenticated" to auth.isAuthenticated, "user" to auth.name)
 		} else {

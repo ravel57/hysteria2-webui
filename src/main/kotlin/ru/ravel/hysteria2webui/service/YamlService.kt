@@ -21,13 +21,13 @@ import javax.imageio.ImageIO
 class YamlService @Autowired constructor(
 	private val jsonService: JsonService,
 
-	@Value("\${hysteria-config-path}")
+	@Value("\${hysteria.config-path}")
 	private var configPath: String,
 
 	@Value("\${host-url}")
 	private var hostUrl: String,
 
-	@Value("\${hysteria-port}")
+	@Value("\${hysteria.port}")
 	private var hysteriaPort: String,
 ) {
 

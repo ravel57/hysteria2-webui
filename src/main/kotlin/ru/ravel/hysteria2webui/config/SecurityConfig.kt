@@ -6,16 +6,16 @@ import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.crypto.password.NoOpPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
-import ru.ravel.hysteria2webui.service.CustomAuthenticationProvider
+import org.springframework.web.filter.RequestContextFilter
+
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig(
-	private val customAuthenticationProvider: CustomAuthenticationProvider,
-) {
+class SecurityConfig {
 
 	@Bean
 	fun authenticationManager(authConfig: AuthenticationConfiguration): AuthenticationManager {
@@ -27,16 +27,25 @@ class SecurityConfig(
 		return NoOpPasswordEncoder.getInstance()
 	}
 
+	@Bean
+	fun requestContextFilter(): RequestContextFilter {
+		return RequestContextFilter()
+	}
+
 
 	@Bean
 	fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
 		return http
 			.csrf { it.disable() }
+			.cors { it.disable() }
 			.authorizeHttpRequests { authorize ->
 				authorize
 					.requestMatchers("/js/**", "/css/**", "/logo.png", "/favicon.png").permitAll()
 					.requestMatchers("/login", "/auth/**").permitAll()
 					.anyRequest().authenticated()
+			}
+			.sessionManagement { session ->
+				session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
 			}
 			.formLogin { form ->
 				form

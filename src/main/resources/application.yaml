@@ -1,4 +1,5 @@
 server:
+  forward-headers-strategy: native
   port: ${PORT:51841}
 
 spring:
@@ -10,8 +11,9 @@ spring:
     mode: HTML
     cache: false
 
-hysteria-config-path: ${HYSTERIA_CONFIG_PATH:/etc/hysteria/config.yaml}
+hysteria:
+  config-path: ${HYSTERIA_CONFIG_PATH:/etc/hysteria/config.yaml}
+  port: ${HYSTERIA_PORT}
 json-config-path: ${JSON_CONFIG_PATH:/etc/hysteria/config.json}
 login-password: ${PASSWORD}
 host-url: ${HOST_URL}
-hysteria-port: ${HYSTERIA_PORT}
