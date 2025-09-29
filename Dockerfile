@@ -13,7 +13,7 @@ WORKDIR /home/gradle/
 RUN gradle bootJar
 
 FROM openjdk:21 AS java
-RUN bash <(curl -fsSL https://get.hy2.sh/)
+RUN curl -fsSL https://get.hy2.sh/ | bash
 WORKDIR /home/java/
 COPY --from=gradle /home/gradle/build/libs/*.jar /home/java/hysteria2-webui.jar
 CMD ["java", "-jar", "hysteria2-webui.jar"]
