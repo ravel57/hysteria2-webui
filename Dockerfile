@@ -12,8 +12,9 @@ COPY --from=nodejs /usr/src/node/hysteria-web-ui/dist/.   /home/gradle/src/main/
 WORKDIR /home/gradle/
 RUN gradle bootJar
 
-FROM openjdk:21 AS java
+FROM openjdk:21-slim AS java
 RUN curl -fsSL https://get.hy2.sh/ | bash
+RUN apt update && apt install procps -y
 WORKDIR /home/java/
 COPY --from=gradle /home/gradle/build/libs/*.jar /home/java/hysteria2-webui.jar
 CMD ["java", "-jar", "hysteria2-webui.jar"]
